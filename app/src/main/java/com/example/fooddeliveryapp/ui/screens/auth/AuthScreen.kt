@@ -32,7 +32,6 @@ fun AuthScreen(
 
         Button(
             onClick = {
-                // Temporary login - we'll implement real auth later
                 sessionManager.storeToken("temp_token_${System.currentTimeMillis()}")
                 onLoginSuccess()
             },
