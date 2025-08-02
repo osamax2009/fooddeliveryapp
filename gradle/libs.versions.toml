@@ -19,6 +19,7 @@ navigationCompose = "2.8.4"
 retrofit = "2.11.0"
 animationCompose = "1.7.6"
 foundationCompose = "1.7.6"
+ksp = "1.9.22-1.0.17"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -52,3 +53,5 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+

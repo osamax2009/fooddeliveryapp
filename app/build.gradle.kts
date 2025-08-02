@@ -1,19 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("kotlin-parcelize")
-    id("com.google.gms.google-services")
+//    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.codewithfk.foodhub"
+    namespace = "com.example.foodhub"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.codewithfk.foodhub"
+        applicationId = "com.example.foodhub"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -35,11 +35,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -54,15 +54,18 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".restaurant"
             resValue("string", "app_name", "FH Restaurant")
+            resValue("string", "app_name", "FH Restaurant")
         }
         create("rider") {
             dimension = "environment"
             applicationIdSuffix = ".rider"
             resValue("string", "app_name", "FH Rider")
+
         }
     }
+
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
         resources {
@@ -89,8 +92,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.core.splashscreen)
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
+    implementation("com.google.dagger:hilt-android:2.48")
+    ksp("com.google.dagger:hilt-android-compiler:2.48")  //
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
@@ -113,9 +116,4 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.maps.android:android-maps-utils:3.8.2")
-
-
-}
-kapt {
-    correctErrorTypes = true
 }
