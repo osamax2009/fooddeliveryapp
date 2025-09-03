@@ -54,13 +54,11 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".restaurant"
             resValue("string", "app_name", "FH Restaurant")
-            resValue("string", "app_name", "FH Restaurant")
         }
         create("rider") {
             dimension = "environment"
             applicationIdSuffix = ".rider"
             resValue("string", "app_name", "FH Rider")
-
         }
     }
 
