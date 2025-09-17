@@ -1,9 +1,21 @@
 package com.example.fooddeliveryapp.data.model
 
 
+data class LoginRequest(
+    val username: String,
+    val password: String
+)
+
 data class AuthResponse(
-    val token: String,
-    val user: UserData? = null
+    val accessToken: String,           // DummyJSON uses 'token' not 'accessToken'
+    val refreshToken: String,
+    val id: Int,
+    val username: String,
+    val email: String,
+    val firstName: String,
+    val lastName: String,
+    val gender: String,
+    val image: String
 )
 
 // ADD: User data structure

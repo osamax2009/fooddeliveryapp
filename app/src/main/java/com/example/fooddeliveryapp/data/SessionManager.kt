@@ -24,14 +24,37 @@ class SessionManager @Inject constructor(
 
     enum class UserType { CUSTOMER, RESTAURANT, RIDER }
 
-    fun storeToken(token: String) {
+    fun storeToken(token: String?) {
+        if (token.isNullOrBlank()) {
+            throw IllegalArgumentException("Token cannot be null or empty")
+        }
         prefs.edit().putString("auth_token", token).apply()
         _isLoggedIn.value = true
+    }
+
+    fun storeUserType(userType: String) {
+        prefs.edit().putString("user_type", userType).apply()
+        _userType.value = UserType.valueOf(userType)
     }
 
     fun getToken(): String? = prefs.getString("auth_token", null)
 
     fun getUserType(): UserType {
+        // First check if user has manually selected a type during login
+        val storedType = prefs.getString("user_type", null)
+        if (storedType != null) {
+            return try {
+                UserType.valueOf(storedType)
+            } catch (e: IllegalArgumentException) {
+                getDefaultUserTypeFromPackage()
+            }
+        }
+
+        // Fallback to package name detection
+        return getDefaultUserTypeFromPackage()
+    }
+
+    private fun getDefaultUserTypeFromPackage(): UserType {
         val packageName = context.packageName
         return when {
             packageName.endsWith(".restaurant") -> UserType.RESTAURANT
@@ -43,6 +66,7 @@ class SessionManager @Inject constructor(
     fun clearSession() {
         prefs.edit().clear().apply()
         _isLoggedIn.value = false
+        _userType.value = getDefaultUserTypeFromPackage()
     }
 
     private fun hasValidToken(): Boolean = !getToken().isNullOrEmpty()

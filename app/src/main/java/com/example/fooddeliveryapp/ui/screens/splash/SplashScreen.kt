@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.*
+import androidx.compose.material3.CheckboxDefaults.colors
+import androidx.compose.material3.FloatingActionButtonDefaults.elevation
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,29 +23,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fooddeliveryapp.data.SessionManager
 import kotlinx.coroutines.delay
 import com.example.foodhub.R
+import javax.inject.Inject
 
 
 @Composable
 fun SplashScreen(
     onNavigateToAuth: () -> Unit,
     onNavigateToHome: () -> Unit,
-    isLoggedIn: Boolean
+    isLoggedIn: Boolean,
 ) {
     LaunchedEffect(Unit) {
-        delay(2000) // Show splash for 2 seconds
+        delay(4000) // Show splash for 2 seconds
         if (isLoggedIn) {
             onNavigateToHome()
         } else {
             onNavigateToAuth()
         }
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFF6B47)), // Vibrant orange color
+            .background(Color(0xFFFF6B47)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -51,10 +54,8 @@ fun SplashScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // App Icon Container
             Card(
-                modifier = Modifier
-                    .size(120.dp)
+                modifier = Modifier.size(120.dp)
                     .clip(RoundedCornerShape(24.dp)),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
@@ -69,35 +70,30 @@ fun SplashScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_logo),
-                        contentDescription = "FoodHub Logo",
-                        modifier = Modifier.size(80.dp)
+                        modifier = Modifier.size(80.dp),
+                        contentDescription = "logo"
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            // App Name
-            Text(
-                text = "FOOD HUB",
-                color = Color.White,
+            Text("Food Hub",
+                color =Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                letterSpacing = 2.sp
             )
-
             Spacer(modifier = Modifier.height(120.dp))
-
-            // Loading Indicator
             LinearProgressIndicator(
-                modifier = Modifier
-                    .width(80.dp)
+                modifier = Modifier.width(80.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = 0.3f)
+                color = Color.White
             )
+
         }
     }
+
+
 }
