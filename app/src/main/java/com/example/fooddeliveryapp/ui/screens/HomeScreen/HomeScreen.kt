@@ -1,48 +1,109 @@
 package com.example.fooddeliveryapp.ui.screens.HomeScreen
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.ui.components.BottomNavigationBar
+import com.example.fooddeliveryapp.ui.features.home.customer.CustomerHomeScreen
+import com.example.fooddeliveryapp.ui.features.home.restaurant.RestaurantHomeScreen
 
 @Composable
 fun HomeScreen(
     onLogout: () -> Unit,
-    sessionManager: SessionManager // Remove hiltViewModel() default parameter
+    sessionManager: SessionManager,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Welcome to FoodHub!",
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Bold
-        )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val userType by sessionManager.userType.collectAsStateWithLifecycle()
+    var currentRoute by remember { mutableStateOf("home") }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "You're using: ${sessionManager.getUserType().name} App",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = {
-                sessionManager.clearSession()
-                onLogout()
-            }
-        ) {
-            Text("Logout")
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                userType = userType,
+                currentRoute = currentRoute,
+                onNavigate = { route -> currentRoute = route },
+                pendingOrdersCount = when (userType) {
+                    SessionManager.UserType.RESTAURANT -> uiState.pendingOrders.size
+                    SessionManager.UserType.CUSTOMER -> uiState.recentOrders.count {
+                        it.status in listOf(
+                            com.example.fooddeliveryapp.data.model.OrderStatus.CONFIRMED,
+                            com.example.fooddeliveryapp.data.model.OrderStatus.PREPARING,
+                            com.example.fooddeliveryapp.data.model.OrderStatus.OUT_FOR_DELIVERY
+                        )
+                    }
+                    else -> 0
+                }
+            )
         }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when (currentRoute) {
+                "home", "dashboard", "rider_home" -> {
+                    when (userType) {
+                        SessionManager.UserType.CUSTOMER -> {
+                            CustomerHomeScreen(
+                                onRestaurantClick = { restaurant ->
+                                    // TODO: Navigate to restaurant detail
+                                },
+                                onLocationClick = {
+                                    // TODO: Open location picker
+                                }
+                            )
+                        }
+                        SessionManager.UserType.RESTAURANT -> {
+                            RestaurantHomeScreen()
+                        }
+                        SessionManager.UserType.RIDER -> {
+                            RiderHomeScreen()
+                        }
+                    }
+                }
+                "search" -> {
+                    // TODO: Implement Search Screen
+                    PlaceholderScreen("Search Screen")
+                }
+                "orders", "restaurant_orders", "deliveries" -> {
+                    // TODO: Implement Orders/Deliveries Screen
+                    PlaceholderScreen("Orders Screen")
+                }
+                "menu" -> {
+                    // TODO: Implement Menu Management Screen
+                    PlaceholderScreen("Menu Management")
+                }
+                "earnings" -> {
+                    // TODO: Implement Earnings Screen
+                    PlaceholderScreen("Earnings Screen")
+                }
+                "profile", "restaurant_profile", "rider_profile" -> {
+                    // TODO: Implement Profile Screen with logout
+                    PlaceholderScreen("Profile Screen")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceholderScreen(title: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = androidx.compose.ui.Alignment.Center
+    ) {
+        androidx.compose.material3.Text(
+            text = "$title\n(Coming Soon)",
+            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
