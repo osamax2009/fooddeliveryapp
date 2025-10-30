@@ -12,6 +12,7 @@ import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.ui.components.BottomNavigationBar
 import com.example.fooddeliveryapp.ui.features.home.customer.CustomerHomeScreen
 import com.example.fooddeliveryapp.ui.features.home.restaurant.RestaurantHomeScreen
+import com.example.fooddeliveryapp.ui.screens.profile.ProfileScreen
 
 @Composable
 fun HomeScreen(
@@ -86,8 +87,10 @@ fun HomeScreen(
                     PlaceholderScreen("Earnings Screen")
                 }
                 "profile", "restaurant_profile", "rider_profile" -> {
-                    // TODO: Implement Profile Screen with logout
-                    PlaceholderScreen("Profile Screen")
+                    ProfileScreen(
+                        sessionManager = sessionManager,
+                        onLogout = onLogout
+                    )
                 }
             }
         }

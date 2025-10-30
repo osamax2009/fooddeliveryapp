@@ -2,6 +2,8 @@ package com.example.fooddeliveryapp.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.fooddeliveryapp.data.model.UserData
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +16,8 @@ class SessionManager @Inject constructor(
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("foodhub_session", Context.MODE_PRIVATE)
+
+    private val gson = Gson()
 
     // Session state
     private val _isLoggedIn = MutableStateFlow(hasValidToken())
@@ -30,6 +34,32 @@ class SessionManager @Inject constructor(
         }
         prefs.edit().putString("auth_token", token).apply()
         _isLoggedIn.value = true
+    }
+
+    fun storeUserData(userData: UserData?) {
+        val userDataJson = gson.toJson(userData)
+        prefs.edit().putString("user_data", userDataJson).apply()
+
+        // Store user type based on role
+        val userType = when (userData?.role?.lowercase()) {
+            "owner" -> UserType.RESTAURANT
+            "rider" -> UserType.RIDER
+            else -> UserType.CUSTOMER
+        }
+        storeUserType(userType.name)
+    }
+
+    fun getUserData(): UserData? {
+        val userDataJson = prefs.getString("user_data", null)
+        return if (userDataJson != null) {
+            try {
+                gson.fromJson(userDataJson, UserData::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
     }
 
     fun storeUserType(userType: String) {

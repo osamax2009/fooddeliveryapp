@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.foodhub"
+    namespace = "com.example.fooddeliveryapp"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.foodhub"
+        applicationId = "com.codewithfk.foodhub"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -53,7 +53,6 @@ android {
         create("restaurant") {
             dimension = "environment"
             applicationIdSuffix = ".restaurant"
-            resValue("string", "app_name", "FH Restaurant")
             resValue("string", "app_name", "FH Restaurant")
         }
         create("rider") {

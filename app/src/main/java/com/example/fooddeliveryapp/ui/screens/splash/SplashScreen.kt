@@ -1,6 +1,6 @@
 package com.example.fooddeliveryapp.ui.screens.splash
 
-import android.R.attr.contentDescription
+import com.example.fooddeliveryapp.R
 import android.content.res.Resources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,9 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fooddeliveryapp.data.SessionManager
 import kotlinx.coroutines.delay
-import com.example.foodhub.R
 import javax.inject.Inject
 
 

@@ -30,6 +30,7 @@ import com.example.fooddeliveryapp.ui.screens.loginScreen.UserType
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onNavigateToSignup: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -80,17 +81,17 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Username Field
+        // Email Field
         OutlinedTextField(
             value = uiState.username,
             onValueChange = { viewModel.onEvent(LoginUIEvent.UsernameChanged(it)) },
-            label = { Text("Username") },
-            placeholder = { Text("Enter your username") },
+            label = { Text("Email") },
+            placeholder = { Text("Enter your email") },
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isLoading,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
+                keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(
@@ -160,6 +161,21 @@ fun LoginScreen(
                     fontWeight = FontWeight.Medium
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Sign Up Button
+        OutlinedButton(
+            onClick = onNavigateToSignup,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = !uiState.isLoading
+        ) {
+            Text(
+                text = "Create New Account",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -242,7 +258,7 @@ private fun DemoCredentialsCard() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Username: emilys\nPassword: emilyspass",
+                text = "Email: customer@example.com\nPassword: password123",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -1,12 +1,9 @@
-package com.example.fooddeliveryapp.ui.features.auth.login
+package com.example.fooddeliveryapp.ui.features.auth.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.data.repository.AuthRepository
-import com.example.fooddeliveryapp.ui.screens.loginScreen.LoginUIEvent
-import com.example.fooddeliveryapp.ui.screens.loginScreen.LoginUIState
-import com.example.fooddeliveryapp.ui.screens.loginScreen.UserType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,13 +12,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(
+class SignupViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LoginUIState())
-    val uiState: StateFlow<LoginUIState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(SignupUIState())
+    val uiState: StateFlow<SignupUIState> = _uiState.asStateFlow()
 
     init {
         // Set default user type based on build variant
@@ -33,39 +30,49 @@ class LoginViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedUserType = defaultUserType)
     }
 
-    fun onEvent(event: LoginUIEvent) {
+    fun onEvent(event: SignupUIEvent) {
         when (event) {
-            is LoginUIEvent.UsernameChanged -> {
+            is SignupUIEvent.NameChanged -> {
                 _uiState.value = _uiState.value.copy(
-                    username = event.username,
+                    name = event.name,
                     errorMessage = null
                 )
             }
-            is LoginUIEvent.PasswordChanged -> {
+            is SignupUIEvent.EmailChanged -> {
+                _uiState.value = _uiState.value.copy(
+                    email = event.email,
+                    errorMessage = null
+                )
+            }
+            is SignupUIEvent.PasswordChanged -> {
                 _uiState.value = _uiState.value.copy(
                     password = event.password,
                     errorMessage = null
                 )
             }
-            is LoginUIEvent.UserTypeChanged -> {
+            is SignupUIEvent.ConfirmPasswordChanged -> {
+                _uiState.value = _uiState.value.copy(
+                    confirmPassword = event.confirmPassword,
+                    errorMessage = null
+                )
+            }
+            is SignupUIEvent.UserTypeChanged -> {
                 _uiState.value = _uiState.value.copy(
                     selectedUserType = event.userType,
                     errorMessage = null
                 )
             }
-            is LoginUIEvent.LoginClicked -> {
-                login()
+            is SignupUIEvent.SignupClicked -> {
+                signup()
             }
-            is LoginUIEvent.ClearError -> {
-                _uiState.value = _uiState.value.copy(errorMessage = null)
-            }
-            is LoginUIEvent.DismissError -> {
+            is SignupUIEvent.DismissError -> {
                 _uiState.value = _uiState.value.copy(errorMessage = null)
             }
         }
     }
 
-    private fun login() {
+    private fun signup() {
+        // Validate form
         if (!isFormValid()) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = "Please fill in all fields"
@@ -74,9 +81,25 @@ class LoginViewModel @Inject constructor(
         }
 
         // Validate email format
-        if (!isValidEmail(_uiState.value.username)) {
+        if (!isValidEmail(_uiState.value.email)) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = "Please enter a valid email address"
+            )
+            return
+        }
+
+        // Validate password length
+        if (_uiState.value.password.length < 6) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Password must be at least 6 characters"
+            )
+            return
+        }
+
+        // Validate password match
+        if (_uiState.value.password != _uiState.value.confirmPassword) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Passwords do not match"
             )
             return
         }
@@ -84,21 +107,22 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            val result = authRepository.login(_uiState.value.username, _uiState.value.password)
+            val result = authRepository.signup(
+                name = _uiState.value.name,
+                email = _uiState.value.email,
+                password = _uiState.value.password,
+                role = _uiState.value.selectedUserType.apiRole
+            )
 
             result.fold(
                 onSuccess = { authResponse ->
-                    // Store token in session
+                    // Store token and user data in session
                     sessionManager.storeToken(authResponse.token)
-
-                    // Store user data if available
-                    authResponse.user?.let { userData ->
-                        sessionManager.storeUserData(userData)
-                    }
+                    sessionManager.storeUserData(authResponse.user)
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        isLoginSuccessful = true,
+                        isSignupSuccessful = true,
                         errorMessage = null
                     )
                 },
@@ -113,8 +137,10 @@ class LoginViewModel @Inject constructor(
     }
 
     private fun isFormValid(): Boolean {
-        return _uiState.value.username.isNotBlank() &&
-                _uiState.value.password.isNotBlank()
+        return _uiState.value.name.isNotBlank() &&
+                _uiState.value.email.isNotBlank() &&
+                _uiState.value.password.isNotBlank() &&
+                _uiState.value.confirmPassword.isNotBlank()
     }
 
     private fun isValidEmail(email: String): Boolean {
@@ -123,9 +149,10 @@ class LoginViewModel @Inject constructor(
 
     private fun getErrorMessage(exception: Throwable): String {
         return when {
-            exception.message?.contains("401") == true -> "Invalid username or password"
+            exception.message?.contains("409") == true -> "User already exists with this email"
+            exception.message?.contains("400") == true -> "Invalid registration data"
             exception.message?.contains("network") == true -> "Network error. Please check your connection"
-            else -> exception.message ?: "Login failed. Please try again"
+            else -> exception.message ?: "Signup failed. Please try again"
         }
     }
 }
