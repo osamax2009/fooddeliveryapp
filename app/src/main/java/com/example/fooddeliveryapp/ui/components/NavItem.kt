@@ -8,10 +8,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.example.fooddeliveryapp.data.SessionManager
 
 sealed class NavItem(
     val route: String,
@@ -40,59 +37,4 @@ sealed class NavItem(
     // Dynamic nav items with badge counts
     class OrdersWithBadge(badgeCount: Int?) : NavItem("orders", Icons.Default.ShoppingCart, "Orders", badgeCount)
     class RestaurantOrdersWithBadge(badgeCount: Int?) : NavItem("restaurant_orders", Icons.Default.Assignment, "Orders", badgeCount)
-}
-
-@Composable
-fun BottomNavigationBar(
-    userType: SessionManager.UserType,
-    currentRoute: String,
-    onNavigate: (String) -> Unit,
-    pendingOrdersCount: Int = 0
-) {
-    val navItems = when (userType) {
-        SessionManager.UserType.CUSTOMER -> listOf(
-            NavItem.Home,
-            NavItem.Search,
-            NavItem.OrdersWithBadge(if (pendingOrdersCount > 0) pendingOrdersCount else null),
-            NavItem.Profile
-        )
-        SessionManager.UserType.RESTAURANT -> listOf(
-            NavItem.Dashboard,
-            NavItem.Menu,
-            NavItem.RestaurantOrdersWithBadge(if (pendingOrdersCount > 0) pendingOrdersCount else null),
-            NavItem.RestaurantProfile
-        )
-        SessionManager.UserType.RIDER -> listOf(
-            NavItem.RiderHome,
-            NavItem.Deliveries,
-            NavItem.Earnings,
-            NavItem.RiderProfile
-        )
-    }
-
-    NavigationBar {
-        navItems.forEach { item ->
-            NavigationBarItem(
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            item.badgeCount?.let { count ->
-                                Badge {
-                                    Text(count.toString())
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label
-                        )
-                    }
-                },
-                label = { Text(item.label) },
-                selected = currentRoute == item.route,
-                onClick = { onNavigate(item.route) }
-            )
-        }
-    }
 }

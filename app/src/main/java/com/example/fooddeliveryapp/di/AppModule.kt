@@ -2,6 +2,7 @@ package com.example.fooddeliveryapp.di
 
 import android.content.Context
 import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.data.api.RestaurantApiService
 import com.example.fooddeliveryapp.data.repository.DataRepository
 import dagger.Module
 import dagger.Provides
@@ -19,9 +20,13 @@ object AppModule {
     fun provideSessionManager(@ApplicationContext context: Context): SessionManager {
         return SessionManager(context)
     }
+
     @Provides
     @Singleton
-    fun provideMockDataRepository(): DataRepository {
-        return DataRepository()
+    fun provideDataRepository(
+        restaurantApiService: RestaurantApiService,
+        sessionManager: SessionManager
+    ): DataRepository {
+        return DataRepository(restaurantApiService, sessionManager)
     }
 }

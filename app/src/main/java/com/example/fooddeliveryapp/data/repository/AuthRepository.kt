@@ -28,11 +28,25 @@ class AuthRepository @Inject constructor(
                 }
             } else {
                 val errorCode = response.code()
-                val errorMessage = when (errorCode) {
-                    400 -> "Invalid email or password"
-                    401 -> "Authentication failed"
-                    404 -> "Service not found"
-                    500 -> "Server error"
+                // Try to parse error body
+                val errorBody = response.errorBody()?.string()
+                val errorMessage = when {
+                    !errorBody.isNullOrBlank() -> {
+                        // Try to extract message from error body
+                        try {
+                            // First try to parse as JSON
+                            val gson = com.google.gson.Gson()
+                            val errorResponse = gson.fromJson(errorBody, AuthResponse::class.java)
+                            errorResponse.message
+                        } catch (e: Exception) {
+                            // If JSON parsing fails, use the plain text error body
+                            null
+                        } ?: errorBody.trim().take(200)
+                    }
+                    errorCode == 400 -> "Invalid email or password"
+                    errorCode == 401 -> "Invalid username or password"
+                    errorCode == 404 -> "Service not found"
+                    errorCode == 500 -> "Server error"
                     else -> "Login failed: ${response.message()}"
                 }
                 Result.failure(Exception(errorMessage))

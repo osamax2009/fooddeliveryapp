@@ -2,6 +2,7 @@ package com.example.fooddeliveryapp.di
 
 import android.content.Context
 import com.example.fooddeliveryapp.data.api.AuthApiService
+import com.example.fooddeliveryapp.data.api.RestaurantApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -58,4 +59,11 @@ object NetworkModule {
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideRestaurantApiService(retrofit: Retrofit): RestaurantApiService {
+        return retrofit.create(RestaurantApiService::class.java)
+    }
+
 }

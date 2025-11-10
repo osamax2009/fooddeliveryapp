@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.data.repository.DataRepository
 import com.example.fooddeliveryapp.data.model.OrderStatus
+import com.example.fooddeliveryapp.data.model.Restaurant
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -188,7 +189,7 @@ class HomeViewModel @Inject constructor(
     }
 
     // Filtered data for UI
-    fun getFilteredRestaurants(): List<com.example.fooddeliveryapp.data.model.Restaurant> {
+    fun getFilteredRestaurants(): List<Restaurant> {
         val restaurants = _uiState.value.restaurants
         val query = _uiState.value.searchQuery
         val category = _uiState.value.selectedCategory

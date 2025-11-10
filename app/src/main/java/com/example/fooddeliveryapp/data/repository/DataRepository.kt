@@ -1,17 +1,51 @@
 package com.example.fooddeliveryapp.data.repository
 
 
+import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.data.api.RestaurantApiService
 import com.example.fooddeliveryapp.data.model.*
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DataRepository @Inject constructor() {
+class DataRepository @Inject constructor(
+    private val restaurantApiService: RestaurantApiService,
+    private val sessionManager: SessionManager
+) {
 
     suspend fun getRestaurants(): Result<List<Restaurant>> {
-        delay(1000) // Simulate network delay
-        return Result.success(mockRestaurants)
+        return try {
+            val token = sessionManager.getToken()
+            if (token.isNullOrEmpty()) {
+                return Result.failure(Exception("No authentication token found"))
+            }
+
+            // TODO: Get actual user location from location service
+            // Using default coordinates for now (New York)
+            val latitude = 40.712776
+            val longitude = -74.005978
+
+            val response = restaurantApiService.getRestaurants(
+                latitude = latitude,
+                longitude = longitude,
+                authorization = "Bearer $token"
+            )
+
+            if (response.isSuccessful) {
+                val restaurantsResponse = response.body()
+                if (restaurantsResponse != null) {
+                    val restaurants = restaurantsResponse.data.map { it.toDomainModel() }
+                    Result.success(restaurants)
+                } else {
+                    Result.failure(Exception("Empty response from server"))
+                }
+            } else {
+                Result.failure(Exception("Failed to fetch restaurants: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun getFoodCategories(): Result<List<FoodCategory>> {
