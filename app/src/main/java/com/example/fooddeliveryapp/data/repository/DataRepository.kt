@@ -1,6 +1,6 @@
 package com.example.fooddeliveryapp.data.repository
 
-
+import android.util.Log
 import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.data.api.RestaurantApiService
 import com.example.fooddeliveryapp.data.model.*
@@ -11,13 +11,19 @@ import javax.inject.Singleton
 @Singleton
 class DataRepository @Inject constructor(
     private val restaurantApiService: RestaurantApiService,
+    private val menuApiService: com.example.fooddeliveryapp.data.api.MenuApiService,
     private val sessionManager: SessionManager
 ) {
+    companion object {
+        private const val TAG = "DataRepository"
+    }
 
     suspend fun getRestaurants(): Result<List<Restaurant>> {
         return try {
+            Log.d(TAG, "getRestaurants: Fetching restaurants")
             val token = sessionManager.getToken()
             if (token.isNullOrEmpty()) {
+                Log.e(TAG, "getRestaurants: No authentication token found")
                 return Result.failure(Exception("No authentication token found"))
             }
 
@@ -25,25 +31,32 @@ class DataRepository @Inject constructor(
             // Using default coordinates for now (New York)
             val latitude = 40.712776
             val longitude = -74.005978
+            Log.d(TAG, "getRestaurants: Using coordinates lat=$latitude, lon=$longitude")
 
             val response = restaurantApiService.getRestaurants(
                 latitude = latitude,
                 longitude = longitude,
                 authorization = "Bearer $token"
             )
+            Log.d(TAG, "getRestaurants: Response code: ${response.code()}")
 
             if (response.isSuccessful) {
                 val restaurantsResponse = response.body()
                 if (restaurantsResponse != null) {
                     val restaurants = restaurantsResponse.data.map { it.toDomainModel() }
+                    Log.d(TAG, "getRestaurants: Success - ${restaurants.size} restaurants found")
                     Result.success(restaurants)
                 } else {
+                    Log.e(TAG, "getRestaurants: Empty response from server")
                     Result.failure(Exception("Empty response from server"))
                 }
             } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e(TAG, "getRestaurants: Failed - ${response.code()} - $errorBody")
                 Result.failure(Exception("Failed to fetch restaurants: ${response.code()} ${response.message()}"))
             }
         } catch (e: Exception) {
+            Log.e(TAG, "getRestaurants: Exception - ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -66,6 +79,52 @@ class DataRepository @Inject constructor(
     suspend fun getUserOrders(): Result<List<Order>> {
         delay(700)
         return Result.success(mockUserOrders)
+    }
+
+    suspend fun getRestaurantMenu(restaurantId: String): Result<List<MenuItem>> {
+        return try {
+            Log.d(TAG, "getRestaurantMenu: Fetching menu for restaurantId=$restaurantId")
+            val token = sessionManager.getToken()
+            if (token.isNullOrEmpty()) {
+                Log.e(TAG, "getRestaurantMenu: No authentication token found")
+                return Result.failure(Exception("No authentication token found"))
+            }
+
+            val response = menuApiService.getRestaurantMenu(
+                restaurantId = restaurantId,
+                authorization = "Bearer $token"
+            )
+            Log.d(TAG, "getRestaurantMenu: Response code: ${response.code()}")
+
+            if (response.isSuccessful) {
+                val menuResponse = response.body()
+                Log.d(TAG, "getRestaurantMenu: Response body is null: ${menuResponse == null}")
+
+                if (menuResponse == null) {
+                    Log.e(TAG, "getRestaurantMenu: Response body is null")
+                    Result.failure(Exception("Empty response from server"))
+                } else {
+                    Log.d(TAG, "getRestaurantMenu: Response data is null: ${menuResponse.data == null}")
+                    Log.d(TAG, "getRestaurantMenu: Response data size: ${menuResponse.data?.size ?: 0}")
+
+                    if (menuResponse.data == null) {
+                        Log.e(TAG, "getRestaurantMenu: Response data field is null")
+                        Result.failure(Exception("No menu data available"))
+                    } else {
+                        val menuItems = menuResponse.data.mapNotNull { it?.toDomainModel() }
+                        Log.d(TAG, "getRestaurantMenu: Success - ${menuItems.size} menu items found")
+                        Result.success(menuItems)
+                    }
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e(TAG, "getRestaurantMenu: Failed - ${response.code()} - $errorBody")
+                Result.failure(Exception("Failed to fetch menu: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "getRestaurantMenu: Exception - ${e.message}", e)
+            Result.failure(e)
+        }
     }
 
     // Mock Data

@@ -25,8 +25,9 @@ object AppModule {
     @Singleton
     fun provideDataRepository(
         restaurantApiService: RestaurantApiService,
+        menuApiService: com.example.fooddeliveryapp.data.api.MenuApiService,
         sessionManager: SessionManager
     ): DataRepository {
-        return DataRepository(restaurantApiService, sessionManager)
+        return DataRepository(restaurantApiService, menuApiService, sessionManager)
     }
 }

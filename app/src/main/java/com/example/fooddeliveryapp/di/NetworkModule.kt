@@ -3,6 +3,7 @@ package com.example.fooddeliveryapp.di
 import android.content.Context
 import com.example.fooddeliveryapp.data.api.AuthApiService
 import com.example.fooddeliveryapp.data.api.RestaurantApiService
+import com.example.fooddeliveryapp.data.api.TokenInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +24,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+        tokenInterceptor: TokenInterceptor
+    ): OkHttpClient {
         // Logging interceptor
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -41,6 +45,7 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(packageNameInterceptor)
+            .addInterceptor(tokenInterceptor) // Token interceptor handles auth and refresh
             .build()
     }
 
@@ -64,6 +69,24 @@ object NetworkModule {
     @Singleton
     fun provideRestaurantApiService(retrofit: Retrofit): RestaurantApiService {
         return retrofit.create(RestaurantApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOrderApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.OrderApiService {
+        return retrofit.create(com.example.fooddeliveryapp.data.api.OrderApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCartApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.CartApiService {
+        return retrofit.create(com.example.fooddeliveryapp.data.api.CartApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMenuApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.MenuApiService {
+        return retrofit.create(com.example.fooddeliveryapp.data.api.MenuApiService::class.java)
     }
 
 }

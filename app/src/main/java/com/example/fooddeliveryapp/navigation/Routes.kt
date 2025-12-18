@@ -10,3 +10,12 @@ object AuthRoute
 
 @Serializable
 object HomeRoute
+
+@Serializable
+object OrderListRoute
+
+@Serializable
+data class OrderDetailsRoute(val orderId: String)
+
+@Serializable
+object CheckoutRoute

@@ -91,6 +91,11 @@ class LoginViewModel @Inject constructor(
                     // Store token in session
                     sessionManager.storeToken(authResponse.token)
 
+                    // Store refresh token if available
+                    authResponse.refreshToken?.let { refreshToken ->
+                        sessionManager.storeRefreshToken(refreshToken)
+                    }
+
                     // Store user data if available
                     authResponse.user?.let { userData ->
                         sessionManager.storeUserData(userData)

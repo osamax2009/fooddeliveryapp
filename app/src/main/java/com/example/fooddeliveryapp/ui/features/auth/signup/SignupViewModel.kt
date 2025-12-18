@@ -118,6 +118,12 @@ class SignupViewModel @Inject constructor(
                 onSuccess = { authResponse ->
                     // Store token and user data in session
                     sessionManager.storeToken(authResponse.token)
+
+                    // Store refresh token if available
+                    authResponse.refreshToken?.let { refreshToken ->
+                        sessionManager.storeRefreshToken(refreshToken)
+                    }
+
                     sessionManager.storeUserData(authResponse.user)
 
                     _uiState.value = _uiState.value.copy(

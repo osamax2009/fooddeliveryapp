@@ -26,9 +26,17 @@ data class OAuthRequest(
 // Auth Response (for both login and signup)
 data class AuthResponse(
     val token: String,
+    @SerializedName("refreshToken")
+    val refreshToken: String? = null,
     @SerializedName("user")
     val user: UserData? = null,
     val message: String? = null
+)
+
+// Refresh Token Request
+data class RefreshTokenRequest(
+    @SerializedName("refreshToken")
+    val refreshToken: String
 )
 
 // User Data Structure

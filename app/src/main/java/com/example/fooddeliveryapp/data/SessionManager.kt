@@ -36,6 +36,12 @@ class SessionManager @Inject constructor(
         _isLoggedIn.value = true
     }
 
+    fun storeRefreshToken(refreshToken: String?) {
+        prefs.edit().putString("refresh_token", refreshToken).apply()
+    }
+
+    fun getRefreshToken(): String? = prefs.getString("refresh_token", null)
+
     fun storeUserData(userData: UserData?) {
         val userDataJson = gson.toJson(userData)
         prefs.edit().putString("user_data", userDataJson).apply()

@@ -6,7 +6,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.ui.features.orders.CheckoutScreen
+import com.example.fooddeliveryapp.ui.features.orders.OrderDetailsScreen
+import com.example.fooddeliveryapp.ui.features.orders.OrderListScreen
 import com.example.fooddeliveryapp.ui.screens.HomeScreen.HomeScreen
 import com.example.fooddeliveryapp.ui.screens.auth.AuthScreen
 import com.example.fooddeliveryapp.ui.screens.splash.SplashScreen
@@ -58,6 +62,43 @@ fun FoodHubNavigation(
                     }
                 },
                 sessionManager = sessionManager // Pass sessionManager
+            )
+        }
+
+        // Order List Screen
+        composable<OrderListRoute> {
+            OrderListScreen(
+                onOrderClick = { orderId ->
+                    navController.navigate(OrderDetailsRoute(orderId))
+                },
+                onBackClick = {
+                    navController.navigateUp()
+                }
+            )
+        }
+
+        // Order Details Screen
+        composable<OrderDetailsRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<OrderDetailsRoute>()
+            OrderDetailsScreen(
+                orderId = route.orderId,
+                onBackClick = {
+                    navController.navigateUp()
+                }
+            )
+        }
+
+        // Checkout Screen
+        composable<CheckoutRoute> {
+            CheckoutScreen(
+                onBackClick = {
+                    navController.navigateUp()
+                },
+                onOrderPlaced = { orderId ->
+                    navController.navigate(OrderDetailsRoute(orderId)) {
+                        popUpTo(CheckoutRoute) { inclusive = true }
+                    }
+                }
             )
         }
     }

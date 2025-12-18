@@ -8,10 +8,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.navigation.CheckoutRoute
+import com.example.fooddeliveryapp.navigation.OrderDetailsRoute
+import com.example.fooddeliveryapp.data.model.Restaurant
 import com.example.fooddeliveryapp.ui.components.BottomNavigationBar
+import com.example.fooddeliveryapp.ui.features.cart.CartScreen
 import com.example.fooddeliveryapp.ui.features.home.customer.CustomerHomeScreen
 import com.example.fooddeliveryapp.ui.features.home.restaurant.RestaurantHomeScreen
+import com.example.fooddeliveryapp.ui.features.orders.OrderListScreen
+import com.example.fooddeliveryapp.ui.features.restaurant.RestaurantDetailScreen
 import com.example.fooddeliveryapp.ui.screens.profile.ProfileScreen
 
 @Composable
@@ -23,6 +30,10 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userType by sessionManager.userType.collectAsStateWithLifecycle()
     var currentRoute by remember { mutableStateOf("home") }
+    var selectedOrderId by remember { mutableStateOf<String?>(null) }
+    var showCheckout by remember { mutableStateOf(false) }
+    var selectedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
+    var showCart by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -51,22 +62,58 @@ fun HomeScreen(
         ) {
             when (currentRoute) {
                 "home", "dashboard", "rider_home" -> {
-                    when (userType) {
-                        SessionManager.UserType.CUSTOMER -> {
-                            CustomerHomeScreen(
-                                onRestaurantClick = { restaurant ->
-                                    // TODO: Navigate to restaurant detail
-                                },
-                                onLocationClick = {
-                                    // TODO: Open location picker
+                    when {
+                        showCart -> {
+                            // Show cart screen
+                            CartScreen(
+                                onBackClick = { showCart = false },
+                                onCheckoutClick = {
+                                    showCart = false
+                                    showCheckout = true
                                 }
                             )
                         }
-                        SessionManager.UserType.RESTAURANT -> {
-                            RestaurantHomeScreen()
+                        showCheckout -> {
+                            // Show checkout screen
+                            com.example.fooddeliveryapp.ui.features.orders.CheckoutScreen(
+                                onBackClick = { showCheckout = false },
+                                onOrderPlaced = { orderId ->
+                                    showCheckout = false
+                                    selectedOrderId = orderId
+                                    currentRoute = "orders"
+                                }
+                            )
                         }
-                        SessionManager.UserType.RIDER -> {
-                            RiderHomeScreen()
+                        selectedRestaurant != null -> {
+                            // Show restaurant detail screen
+                            RestaurantDetailScreen(
+                                restaurant = selectedRestaurant!!,
+                                onBackClick = { selectedRestaurant = null },
+                                onCartClick = { showCart = true }
+                            )
+                        }
+                        else -> {
+                            when (userType) {
+                                SessionManager.UserType.CUSTOMER -> {
+                                    CustomerHomeScreen(
+                                        onRestaurantClick = { restaurant ->
+                                            selectedRestaurant = restaurant
+                                        },
+                                        onLocationClick = {
+                                            // TODO: Open location picker
+                                        },
+                                        onCheckoutClick = {
+                                            showCart = true
+                                        }
+                                    )
+                                }
+                                SessionManager.UserType.RESTAURANT -> {
+                                    RestaurantHomeScreen()
+                                }
+                                SessionManager.UserType.RIDER -> {
+                                    RiderHomeScreen()
+                                }
+                            }
                         }
                     }
                 }
@@ -74,8 +121,23 @@ fun HomeScreen(
                     // TODO: Implement Search Screen
                     PlaceholderScreen("Search Screen")
                 }
-                "orders", "restaurant_orders", "deliveries" -> {
-                    // TODO: Implement Orders/Deliveries Screen
+                "orders" -> {
+                    if (selectedOrderId != null) {
+                        // Show order details
+                        com.example.fooddeliveryapp.ui.features.orders.OrderDetailsScreen(
+                            orderId = selectedOrderId!!,
+                            onBackClick = { selectedOrderId = null }
+                        )
+                    } else {
+                        // Show order list
+                        OrderListScreen(
+                            onOrderClick = { orderId -> selectedOrderId = orderId },
+                            onBackClick = { currentRoute = "home" }
+                        )
+                    }
+                }
+                "restaurant_orders", "deliveries" -> {
+                    // TODO: Implement Restaurant Orders/Deliveries Screen
                     PlaceholderScreen("Orders Screen")
                 }
                 "menu" -> {

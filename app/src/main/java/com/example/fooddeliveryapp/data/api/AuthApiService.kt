@@ -3,6 +3,7 @@ package com.example.fooddeliveryapp.data.api
 import com.example.fooddeliveryapp.data.model.AuthResponse
 import com.example.fooddeliveryapp.data.model.LoginRequest
 import com.example.fooddeliveryapp.data.model.OAuthRequest
+import com.example.fooddeliveryapp.data.model.RefreshTokenRequest
 import com.example.fooddeliveryapp.data.model.SignupRequest
 import retrofit2.Response
 import retrofit2.http.Body
@@ -18,4 +19,7 @@ interface AuthApiService {
 
     @POST("auth/oauth")
     suspend fun oauthLogin(@Body oAuthRequest: OAuthRequest): Response<AuthResponse>
+
+    @POST("auth/refresh")
+    suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<AuthResponse>
 }

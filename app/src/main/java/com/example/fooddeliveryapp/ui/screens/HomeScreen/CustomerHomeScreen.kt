@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,6 +40,7 @@ import com.example.fooddeliveryapp.ui.screens.HomeScreen.HomeViewModel
 fun CustomerHomeScreen(
     onRestaurantClick: (Restaurant) -> Unit = {},
     onLocationClick: () -> Unit = {},
+    onCheckoutClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,7 +58,8 @@ fun CustomerHomeScreen(
                 currentLocation = uiState.currentLocation,
                 searchQuery = uiState.searchQuery,
                 onLocationClick = onLocationClick,
-                onSearchQueryChange = { viewModel.onEvent(HomeUIEvent.SearchQueryChanged(it)) }
+                onSearchQueryChange = { viewModel.onEvent(HomeUIEvent.SearchQueryChanged(it)) },
+                onCheckoutClick = onCheckoutClick
             )
         }
 
@@ -173,7 +176,8 @@ private fun CustomerHeader(
     currentLocation: String,
     searchQuery: String,
     onLocationClick: () -> Unit,
-    onSearchQueryChange: (String) -> Unit
+    onSearchQueryChange: (String) -> Unit,
+    onCheckoutClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -181,31 +185,53 @@ private fun CustomerHeader(
             .background(MaterialTheme.colorScheme.primary)
             .padding(16.dp)
     ) {
-        // Location row
+        // Location row with checkout button
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onLocationClick() },
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = "Location",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = "Deliver to",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onLocationClick() },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Location",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
-                Text(
-                    text = currentLocation,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Medium
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "Deliver to",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = currentLocation,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Checkout button
+            IconButton(
+                onClick = onCheckoutClick,
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = "Checkout",
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
