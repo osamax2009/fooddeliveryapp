@@ -1,10 +1,12 @@
 package com.example.fooddeliveryapp.ui.screens.HomeScreen
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.data.repository.DataRepository
+import com.example.fooddeliveryapp.data.repository.RiderRepository
 import com.example.fooddeliveryapp.data.model.OrderStatus
 import com.example.fooddeliveryapp.data.model.Restaurant
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,8 +19,13 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val dataRepository: DataRepository,
+    private val riderRepository: RiderRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "HomeViewModel"
+    }
 
     private val _uiState = MutableStateFlow(HomeUIState())
     val uiState: StateFlow<HomeUIState> = _uiState.asStateFlow()
@@ -65,9 +72,17 @@ class HomeViewModel @Inject constructor(
             // Rider events
             is HomeUIEvent.RiderStatusToggled -> {
                 _uiState.value = _uiState.value.copy(isRiderOnline = event.isOnline)
+                if (event.isOnline) {
+                    viewModelScope.launch {
+                        updateRiderLocationAndLoad()
+                    }
+                }
             }
             is HomeUIEvent.DeliveryAccepted -> {
                 acceptDelivery(event.deliveryId)
+            }
+            is HomeUIEvent.DeliveryRejected -> {
+                rejectDelivery(event.deliveryId)
             }
             is HomeUIEvent.DeliveryCompleted -> {
                 completeDelivery(event.deliveryId)
@@ -83,7 +98,7 @@ class HomeViewModel @Inject constructor(
                 when (sessionManager.getUserType()) {
                     SessionManager.UserType.CUSTOMER -> loadCustomerData()
                     SessionManager.UserType.RESTAURANT -> loadRestaurantData()
-                    SessionManager.UserType.RIDER -> loadRiderData()
+                    SessionManager.UserType.RIDER -> updateRiderLocationAndLoad()
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -135,24 +150,77 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadRiderData() {
-        val deliveriesResult = dataRepository.getDeliveryRequests()
+    /**
+     * Update rider location before loading deliveries
+     * Location must be updated before the backend will show available deliveries
+     */
+    private suspend fun updateRiderLocationAndLoad() {
+        Log.d(TAG, "Updating rider location before loading deliveries...")
 
-        if (deliveriesResult.isSuccess) {
-            val deliveries = deliveriesResult.getOrNull() ?: emptyList()
+        // TODO: Get actual device location using FusedLocationProviderClient
+        // For now using mock location data
+        val mockLatitude = 37.7749 // San Francisco
+        val mockLongitude = -122.4194
+        val mockAddress = "San Francisco, CA"
 
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                availableDeliveries = deliveries,
-                todayDeliveries = 8, // Mock data
-                todayEarningsRider = 67.50 // Mock data
-            )
+        val locationResult = riderRepository.updateLocation(
+            latitude = mockLatitude,
+            longitude = mockLongitude,
+            address = mockAddress
+        )
+
+        if (locationResult.isSuccess) {
+            Log.d(TAG, "Location updated successfully, now loading deliveries")
+            loadRiderData()
         } else {
+            val error = locationResult.exceptionOrNull()?.message ?: "Failed to update location"
+            Log.e(TAG, "Failed to update location: $error")
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                errorMessage = "Failed to load delivery data"
+                errorMessage = "Please enable location services to view available deliveries"
             )
         }
+    }
+
+    private suspend fun loadRiderData() {
+        Log.d(TAG, "Loading rider data...")
+
+        // Fetch both available and active deliveries
+        val availableResult = riderRepository.getAvailableDeliveries()
+        val activeResult = riderRepository.getActiveDeliveries()
+
+        // Handle partial success - show what we can even if one endpoint fails
+        val availableDeliveries = availableResult.getOrNull() ?: emptyList()
+        val activeDeliveries = activeResult.getOrNull() ?: emptyList()
+
+        // Convert orders to DeliveryRequest format
+        val availableRequests = availableDeliveries.map { it.toDeliveryRequest() }
+        val currentDelivery = activeDeliveries.firstOrNull()?.toDeliveryRequest()
+
+        Log.d(TAG, "Loaded ${availableRequests.size} available deliveries, ${activeDeliveries.size} active deliveries")
+
+        // Build error message if any endpoint failed
+        val errorMessage = when {
+            availableResult.isFailure && activeResult.isFailure -> {
+                "Failed to load deliveries: ${availableResult.exceptionOrNull()?.message ?: "Unknown error"}"
+            }
+            availableResult.isFailure -> {
+                Log.w(TAG, "Available deliveries failed: ${availableResult.exceptionOrNull()?.message}")
+                "Could not load available deliveries. Showing active deliveries only."
+            }
+            activeResult.isFailure -> {
+                Log.w(TAG, "Active deliveries failed: ${activeResult.exceptionOrNull()?.message}")
+                "Could not load active deliveries. Showing available deliveries only."
+            }
+            else -> null
+        }
+
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            availableDeliveries = availableRequests,
+            currentDelivery = currentDelivery,
+            errorMessage = errorMessage
+        )
     }
 
     private fun updateOrderStatus(orderId: String, status: OrderStatus) {
@@ -169,23 +237,77 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun acceptDelivery(deliveryId: String) {
-        val deliveries = _uiState.value.availableDeliveries
-        val selectedDelivery = deliveries.find { it.id == deliveryId }
+        Log.d(TAG, "Accepting delivery: $deliveryId")
 
-        selectedDelivery?.let { delivery ->
-            _uiState.value = _uiState.value.copy(
-                currentDelivery = delivery,
-                availableDeliveries = deliveries.filter { it.id != deliveryId }
-            )
+        viewModelScope.launch {
+            try {
+                val result = riderRepository.acceptDelivery(deliveryId)
+
+                if (result.isSuccess) {
+                    Log.d(TAG, "Successfully accepted delivery: $deliveryId")
+                    // Reload rider data to refresh the lists
+                    loadRiderData()
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to accept delivery"
+                    Log.e(TAG, "Failed to accept delivery: $error")
+                    _uiState.value = _uiState.value.copy(errorMessage = error)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while accepting delivery: ${e.message}", e)
+                _uiState.value = _uiState.value.copy(errorMessage = "Error: ${e.message}")
+            }
+        }
+    }
+
+    private fun rejectDelivery(deliveryId: String) {
+        Log.d(TAG, "Rejecting delivery: $deliveryId")
+
+        viewModelScope.launch {
+            try {
+                val result = riderRepository.rejectDelivery(deliveryId)
+
+                if (result.isSuccess) {
+                    Log.d(TAG, "Successfully rejected delivery: $deliveryId")
+                    // Remove from available deliveries
+                    val updatedDeliveries = _uiState.value.availableDeliveries.filter { it.id != deliveryId }
+                    _uiState.value = _uiState.value.copy(availableDeliveries = updatedDeliveries)
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to reject delivery"
+                    Log.e(TAG, "Failed to reject delivery: $error")
+                    _uiState.value = _uiState.value.copy(errorMessage = error)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while rejecting delivery: ${e.message}", e)
+                _uiState.value = _uiState.value.copy(errorMessage = "Error: ${e.message}")
+            }
         }
     }
 
     private fun completeDelivery(deliveryId: String) {
-        _uiState.value = _uiState.value.copy(
-            currentDelivery = null,
-            todayDeliveries = _uiState.value.todayDeliveries + 1,
-            todayEarningsRider = _uiState.value.todayEarningsRider + (_uiState.value.currentDelivery?.estimatedEarnings ?: 0.0)
-        )
+        Log.d(TAG, "Completing delivery: $deliveryId")
+
+        viewModelScope.launch {
+            try {
+                val result = riderRepository.updateDeliveryStatus(deliveryId, "DELIVERED")
+
+                if (result.isSuccess) {
+                    Log.d(TAG, "Successfully completed delivery: $deliveryId")
+                    val earnings = _uiState.value.currentDelivery?.estimatedEarnings ?: 0.0
+                    _uiState.value = _uiState.value.copy(
+                        currentDelivery = null,
+                        todayDeliveries = _uiState.value.todayDeliveries + 1,
+                        todayEarningsRider = _uiState.value.todayEarningsRider + earnings
+                    )
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to complete delivery"
+                    Log.e(TAG, "Failed to complete delivery: $error")
+                    _uiState.value = _uiState.value.copy(errorMessage = error)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while completing delivery: ${e.message}", e)
+                _uiState.value = _uiState.value.copy(errorMessage = "Error: ${e.message}")
+            }
+        }
     }
 
     // Filtered data for UI
@@ -205,4 +327,22 @@ class HomeViewModel @Inject constructor(
             matchesQuery && matchesCategory
         }
     }
+}
+
+/**
+ * Extension function to convert Order to DeliveryRequest
+ */
+private fun com.example.fooddeliveryapp.data.model.Order.toDeliveryRequest(): com.example.fooddeliveryapp.data.model.DeliveryRequest {
+    return com.example.fooddeliveryapp.data.model.DeliveryRequest(
+        id = this.id,
+        orderNumber = this.id.takeLast(8).uppercase(), // Use last 8 chars of ID as order number
+        restaurantName = this.restaurantName,
+        customerName = this.deliveryAddress?.split(",")?.firstOrNull() ?: "Customer",
+        pickupAddress = this.restaurantName, // Using restaurant name as pickup address for now
+        deliveryAddress = this.deliveryAddress ?: "Unknown address",
+        distance = "2.5 km", // TODO: Calculate actual distance
+        estimatedEarnings = this.totalAmount * 0.15, // 15% of order total as earnings
+        items = this.items,
+        specialInstructions = null
+    )
 }

@@ -29,8 +29,31 @@ fun RiderHomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showNewOrderAlert by remember { mutableStateOf(false) }
+    var previousDeliveryCount by remember { mutableIntStateOf(0) }
 
-    LazyColumn(
+    // Auto-refresh available deliveries every 30 seconds when online
+    LaunchedEffect(uiState.isRiderOnline) {
+        if (uiState.isRiderOnline) {
+            while (true) {
+                kotlinx.coroutines.delay(30000) // 30 seconds
+                viewModel.onEvent(HomeUIEvent.Refresh)
+            }
+        }
+    }
+
+    // Detect new deliveries and show alert
+    LaunchedEffect(uiState.availableDeliveries.size) {
+        if (uiState.isRiderOnline && uiState.availableDeliveries.size > previousDeliveryCount && previousDeliveryCount > 0) {
+            showNewOrderAlert = true
+            kotlinx.coroutines.delay(5000) // Auto-dismiss after 5 seconds
+            showNewOrderAlert = false
+        }
+        previousDeliveryCount = uiState.availableDeliveries.size
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
@@ -89,7 +112,8 @@ fun RiderHomeScreen(
             items(uiState.availableDeliveries) { delivery ->
                 DeliveryRequestCard(
                     delivery = delivery,
-                    onAccept = { viewModel.onEvent(HomeUIEvent.DeliveryAccepted(delivery.id)) }
+                    onAccept = { viewModel.onEvent(HomeUIEvent.DeliveryAccepted(delivery.id)) },
+                    onReject = { viewModel.onEvent(HomeUIEvent.DeliveryRejected(delivery.id)) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -102,6 +126,46 @@ fun RiderHomeScreen(
                     onRetry = { viewModel.onEvent(HomeUIEvent.Refresh) },
                     onDismiss = { viewModel.onEvent(HomeUIEvent.ClearError) }
                 )
+            }
+        }
+    }
+
+        // New Order Alert Banner
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showNewOrderAlert,
+            enter = androidx.compose.animation.slideInVertically() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically() + androidx.compose.animation.fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF4CAF50)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeliveryDining,
+                        contentDescription = "New delivery",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "🔔 New delivery request available!",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -300,7 +364,8 @@ private fun CurrentDeliveryCard(
 @Composable
 private fun DeliveryRequestCard(
     delivery: DeliveryRequest,
-    onAccept: () -> Unit
+    onAccept: () -> Unit,
+    onReject: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -393,11 +458,26 @@ private fun DeliveryRequestCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onAccept,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Accept Delivery")
+                OutlinedButton(
+                    onClick = onReject,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reject")
+                }
+
+                Button(
+                    onClick = onAccept,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Accept")
+                }
             }
         }
     }

@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 // Login Request
 data class LoginRequest(
     val email: String,
-    val password: String
+    val password: String,
+    val deviceInfo: String
 )
 
 // Signup Request
@@ -13,18 +14,21 @@ data class SignupRequest(
     val name: String,
     val email: String,
     val password: String,
-    val role: String // "customer", "owner", or "rider"
+    val role: String, // "customer", "owner", or "rider"
+    val deviceInfo: String
 )
 
 // OAuth Request
 data class OAuthRequest(
     val provider: String, // "google" or "facebook"
     val token: String,
-    val type: String // "customer", "owner", or "rider"
+    val type: String, // "customer", "owner", or "rider"
+    val deviceInfo: String
 )
 
 // Auth Response (for both login and signup)
 data class AuthResponse(
+    @SerializedName("accessToken")
     val token: String,
     @SerializedName("refreshToken")
     val refreshToken: String? = null,
@@ -36,7 +40,9 @@ data class AuthResponse(
 // Refresh Token Request
 data class RefreshTokenRequest(
     @SerializedName("refreshToken")
-    val refreshToken: String
+    val refreshToken: String,
+    @SerializedName("deviceInfo")
+    val deviceInfo: String
 )
 
 // User Data Structure

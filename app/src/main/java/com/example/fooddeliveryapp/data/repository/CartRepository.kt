@@ -44,15 +44,9 @@ class CartRepository @Inject constructor(
                     Log.e(TAG, "getCart: Response body is null")
                     Result.failure(Exception("Empty response from server"))
                 } else {
-                    Log.d(TAG, "getCart: Response data is null: ${cartResponse.data == null}")
-
-                    if (cartResponse.data == null) {
-                        Log.e(TAG, "getCart: Response data field is null")
-                        Result.failure(Exception("Cart data is not available"))
-                    } else {
-                        Log.d(TAG, "getCart: Success - ${cartResponse.data.items?.size ?: 0} items")
-                        Result.success(cartResponse.data)
-                    }
+                    // Cart API returns CartResponse directly (not wrapped in "data")
+                    Log.d(TAG, "getCart: Success - ${cartResponse.items?.size ?: 0} items")
+                    Result.success(cartResponse)
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -90,23 +84,10 @@ class CartRepository @Inject constructor(
             Log.d(TAG, "addToCart: Response code: ${response.code()}")
 
             if (response.isSuccessful) {
-                val cartResponse = response.body()
-                Log.d(TAG, "addToCart: Response body is null: ${cartResponse == null}")
-
-                if (cartResponse == null) {
-                    Log.e(TAG, "addToCart: Response body is null")
-                    Result.failure(Exception("Empty response from server"))
-                } else {
-                    Log.d(TAG, "addToCart: Response data is null: ${cartResponse.data == null}")
-
-                    if (cartResponse.data == null) {
-                        Log.e(TAG, "addToCart: Response data field is null")
-                        Result.failure(Exception("Failed to add to cart - no data returned"))
-                    } else {
-                        Log.d(TAG, "addToCart: Success - Cart now has ${cartResponse.data.items?.size ?: 0} items")
-                        Result.success(cartResponse.data)
-                    }
-                }
+                Log.d(TAG, "addToCart: Item added successfully, fetching updated cart")
+                // The API returns {"id": "...", "message": "..."},  not the cart
+                // So we need to fetch the cart to get the updated state
+                return getCart()
             } else {
                 val errorBody = response.errorBody()?.string()
                 Log.e(TAG, "addToCart: Failed - ${response.code()} - $errorBody")
@@ -141,7 +122,8 @@ class CartRepository @Inject constructor(
             if (response.isSuccessful) {
                 val cartResponse = response.body()
                 if (cartResponse != null) {
-                    Result.success(cartResponse.data)
+                    // Cart API returns CartResponse directly (not wrapped in "data")
+                    Result.success(cartResponse)
                 } else {
                     Result.failure(Exception("Empty response from server"))
                 }
@@ -172,7 +154,8 @@ class CartRepository @Inject constructor(
             if (response.isSuccessful) {
                 val cartResponse = response.body()
                 if (cartResponse != null) {
-                    Result.success(cartResponse.data)
+                    // Cart API returns CartResponse directly (not wrapped in "data")
+                    Result.success(cartResponse)
                 } else {
                     Result.failure(Exception("Empty response from server"))
                 }

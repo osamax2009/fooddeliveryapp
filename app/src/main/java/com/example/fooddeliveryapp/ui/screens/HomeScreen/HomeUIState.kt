@@ -49,5 +49,6 @@ sealed class HomeUIEvent {
     // Rider events
     data class RiderStatusToggled(val isOnline: Boolean) : HomeUIEvent()
     data class DeliveryAccepted(val deliveryId: String) : HomeUIEvent()
+    data class DeliveryRejected(val deliveryId: String) : HomeUIEvent()
     data class DeliveryCompleted(val deliveryId: String) : HomeUIEvent()
 }

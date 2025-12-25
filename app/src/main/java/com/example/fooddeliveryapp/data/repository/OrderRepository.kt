@@ -1,5 +1,6 @@
 package com.example.fooddeliveryapp.data.repository
 
+import android.util.Log
 import com.example.fooddeliveryapp.data.SessionManager
 import com.example.fooddeliveryapp.data.api.OrderApiService
 import com.example.fooddeliveryapp.data.model.*
@@ -14,6 +15,9 @@ class OrderRepository @Inject constructor(
     private val orderApiService: OrderApiService,
     private val sessionManager: SessionManager
 ) {
+    companion object {
+        private const val TAG = "OrderRepository"
+    }
 
     /**
      * Place a new order from the current cart
@@ -35,7 +39,7 @@ class OrderRepository @Inject constructor(
 
             if (response.isSuccessful) {
                 val orderResponse = response.body()
-                if (orderResponse != null) {
+                if (orderResponse?.data != null) {
                     val order = orderResponse.data.toDomainModel()
                     Result.success(order)
                 } else {
@@ -56,28 +60,39 @@ class OrderRepository @Inject constructor(
      */
     suspend fun getUserOrders(): Result<List<Order>> {
         return try {
+            Log.d(TAG, "getUserOrders: Fetching user orders")
             val token = sessionManager.getToken()
             if (token.isNullOrEmpty()) {
+                Log.e(TAG, "getUserOrders: No authentication token found")
                 return Result.failure(Exception("No authentication token found"))
             }
 
             val response = orderApiService.getUserOrders(
                 authorization = "Bearer $token"
             )
+            Log.d(TAG, "getUserOrders: Response code: ${response.code()}")
 
             if (response.isSuccessful) {
                 val ordersResponse = response.body()
-                if (ordersResponse != null) {
+                Log.d(TAG, "getUserOrders: Response body is null: ${ordersResponse == null}")
+                Log.d(TAG, "getUserOrders: Response data is null: ${ordersResponse?.data == null}")
+                Log.d(TAG, "getUserOrders: Response data size: ${ordersResponse?.data?.size ?: 0}")
+
+                if (ordersResponse?.data != null) {
                     val orders = ordersResponse.data.map { it.toDomainModel() }
+                    Log.d(TAG, "getUserOrders: Success - ${orders.size} orders found")
                     Result.success(orders)
                 } else {
+                    Log.e(TAG, "getUserOrders: Empty response from server")
                     Result.failure(Exception("Empty response from server"))
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
+                Log.e(TAG, "getUserOrders: Failed - ${response.code()} - $errorBody")
                 Result.failure(Exception("Failed to fetch orders: ${response.code()} - $errorBody"))
             }
         } catch (e: Exception) {
+            Log.e(TAG, "getUserOrders: Exception - ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -101,7 +116,7 @@ class OrderRepository @Inject constructor(
 
             if (response.isSuccessful) {
                 val orderResponse = response.body()
-                if (orderResponse != null) {
+                if (orderResponse?.data != null) {
                     val order = orderResponse.data.toDomainModel()
                     Result.success(order)
                 } else {
@@ -148,7 +163,7 @@ class OrderRepository @Inject constructor(
 
             if (response.isSuccessful) {
                 val orderResponse = response.body()
-                if (orderResponse != null) {
+                if (orderResponse?.data != null) {
                     val order = orderResponse.data.toDomainModel()
                     Result.success(order)
                 } else {

@@ -199,7 +199,7 @@ fun CartItemCard(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (cartItem.menuItem?.imageUrl?.isNotEmpty() == true) {
+            if (cartItem.menuItem.imageUrl?.isNotEmpty() == true) {
                 AsyncImage(
                     model = cartItem.menuItem.imageUrl,
                     contentDescription = cartItem.menuItem.name,
@@ -211,7 +211,7 @@ fun CartItemCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = cartItem.menuItem?.name ?: "Item",
+                    text = cartItem.menuItem.name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )

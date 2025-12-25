@@ -106,7 +106,10 @@ class TokenInterceptor @Inject constructor(
             Log.d(TAG, "Calling refresh token API")
             val authApiService = authApiServiceProvider.get()
             val response = authApiService.refreshToken(
-                RefreshTokenRequest(refreshToken = refreshToken)
+                RefreshTokenRequest(
+                    refreshToken = refreshToken,
+                    deviceInfo = "Android App"
+                )
             )
 
             if (response.isSuccessful) {

@@ -17,7 +17,13 @@ class AuthRepository @Inject constructor(
      */
     suspend fun login(email: String, password: String): Result<AuthResponse> {
         return try {
-            val response = authApiService.login(LoginRequest(email, password))
+            val response = authApiService.login(
+                LoginRequest(
+                    email = email,
+                    password = password,
+                    deviceInfo = "Android App"
+                )
+            )
             if (response.isSuccessful && response.body() != null) {
                 val authResponse = response.body()!!
                 // Validate that we have a token
@@ -75,7 +81,8 @@ class AuthRepository @Inject constructor(
                     name = name,
                     email = email,
                     password = password,
-                    role = role
+                    role = role,
+                    deviceInfo = "Android App"
                 )
             )
             if (response.isSuccessful && response.body() != null) {
@@ -116,7 +123,8 @@ class AuthRepository @Inject constructor(
                 OAuthRequest(
                     provider = provider,
                     token = token,
-                    type = type
+                    type = type,
+                    deviceInfo = "Android App"
                 )
             )
             if (response.isSuccessful && response.body() != null) {

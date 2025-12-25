@@ -19,3 +19,9 @@ data class OrderDetailsRoute(val orderId: String)
 
 @Serializable
 object CheckoutRoute
+
+@Serializable
+data class RestaurantDetailsRoute(val restaurantId: String)
+
+@Serializable
+object CartRoute

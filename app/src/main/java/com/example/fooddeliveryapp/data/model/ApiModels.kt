@@ -92,6 +92,7 @@ data class MenuItemResponse(
 
 /**
  * API response model for order item
+ * Note: API returns menuItemName string, not full menuItem object
  */
 data class OrderItemResponse(
     @SerializedName("id")
@@ -103,9 +104,11 @@ data class OrderItemResponse(
     @SerializedName("quantity")
     val quantity: Int,
     @SerializedName("price")
-    val price: Double,
+    val price: Double? = null,
+    @SerializedName("menuItemName")
+    val menuItemName: String? = null,
     @SerializedName("menuItem")
-    val menuItem: MenuItemResponse?
+    val menuItem: MenuItemResponse? = null
 )
 
 /**
@@ -138,30 +141,34 @@ data class AddressResponse(
  * API response model for order
  */
 data class OrderResponse(
-    @SerializedName("id")
+    @SerializedName("id", alternate = ["orderId"])
     val id: String,
     @SerializedName("userId")
-    val userId: String,
+    val userId: String? = null,
     @SerializedName("restaurantId")
-    val restaurantId: String,
+    val restaurantId: String? = null,
     @SerializedName("addressId")
-    val addressId: String,
+    val addressId: String? = null,
+    @SerializedName("riderId")
+    val riderId: String? = null,
     @SerializedName("status")
-    val status: String,
-    @SerializedName("totalAmount")
+    val status: String? = null,
+    @SerializedName("totalAmount", alternate = ["orderAmount"])
     val totalAmount: Double,
     @SerializedName("deliveryFee")
-    val deliveryFee: Double,
+    val deliveryFee: Double? = null,
     @SerializedName("subtotal")
-    val subtotal: Double,
+    val subtotal: Double? = null,
     @SerializedName("tax")
-    val tax: Double,
+    val tax: Double? = null,
+    @SerializedName("stripePaymentIntentId")
+    val stripePaymentIntentId: String? = null,
     @SerializedName("createdAt")
     val createdAt: String,
     @SerializedName("updatedAt")
-    val updatedAt: String,
+    val updatedAt: String? = null,
     @SerializedName("items")
-    val items: List<OrderItemResponse>,
+    val items: List<OrderItemResponse>? = null,
     @SerializedName("restaurant")
     val restaurant: RestaurantResponse?,
     @SerializedName("address")
@@ -170,10 +177,11 @@ data class OrderResponse(
 
 /**
  * API response wrapper for order list
+ * Note: The API returns orders in an "orders" field, not "data"
  */
 data class OrdersApiResponse(
-    @SerializedName("data")
-    val data: List<OrderResponse>
+    @SerializedName("orders")
+    val data: List<OrderResponse>? = null
 )
 
 /**
@@ -181,7 +189,7 @@ data class OrdersApiResponse(
  */
 data class OrderApiResponse(
     @SerializedName("data")
-    val data: OrderResponse
+    val data: OrderResponse? = null
 )
 
 /**
@@ -222,20 +230,20 @@ fun OrderResponse.toDomainModel(): Order {
     return Order(
         id = id,
         restaurantName = restaurant?.name ?: "Unknown Restaurant",
-        items = items.map { orderItem ->
+        items = items?.map { orderItem ->
             OrderItem(
                 menuItem = orderItem.menuItem?.toDomainModel() ?: MenuItem(
                     id = orderItem.menuItemId,
-                    name = "Unknown Item",
+                    name = orderItem.menuItemName ?: "Unknown Item",
                     description = "",
-                    price = orderItem.price,
+                    price = orderItem.price ?: 0.0,
                     imageUrl = "",
                     category = ""
                 ),
                 quantity = orderItem.quantity
             )
-        },
-        status = status.toOrderStatus(),
+        } ?: emptyList(),
+        status = (status ?: "READY_FOR_PICKUP").toOrderStatus(),
         totalAmount = totalAmount,
         createdAt = createdAt,
         estimatedDelivery = null, // Not included in API response
@@ -267,6 +275,7 @@ data class UpdateCartItemRequest(
 
 /**
  * API response model for cart item
+ * Note: The API returns the full menu item object in the "menuItemId" field
  */
 data class CartItemResponse(
     @SerializedName("id")
@@ -276,43 +285,120 @@ data class CartItemResponse(
     @SerializedName("restaurantId")
     val restaurantId: String,
     @SerializedName("menuItemId")
-    val menuItemId: String,
+    val menuItem: MenuItemResponse,  // API returns full menu item object here
     @SerializedName("quantity")
     val quantity: Int,
-    @SerializedName("menuItem")
-    val menuItem: MenuItemResponse?
+    @SerializedName("addedAt")
+    val addedAt: String? = null
+)
+
+/**
+ * API response model for checkout details
+ */
+data class CheckoutDetails(
+    @SerializedName("subTotal")
+    val subtotal: Double?,
+    @SerializedName("totalAmount")
+    val total: Double?,
+    @SerializedName("tax")
+    val tax: Double?,
+    @SerializedName("deliveryFee")
+    val deliveryFee: Double?
 )
 
 /**
  * API response model for cart with checkout details
+ * The cart API returns this structure directly (no "data" wrapper)
  */
 data class CartResponse(
     @SerializedName("items")
     val items: List<CartItemResponse>?,
-    @SerializedName("subtotal")
-    val subtotal: Double?,
-    @SerializedName("tax")
-    val tax: Double?,
-    @SerializedName("deliveryFee")
-    val deliveryFee: Double?,
-    @SerializedName("total")
-    val total: Double?,
+    @SerializedName("checkoutDetails")
+    val checkoutDetails: CheckoutDetails?,
     @SerializedName("restaurantId")
     val restaurantId: String?
-)
+) {
+    // Convenience properties to maintain compatibility with existing UI code
+    val subtotal: Double? get() = checkoutDetails?.subtotal
+    val tax: Double? get() = checkoutDetails?.tax
+    val deliveryFee: Double? get() = checkoutDetails?.deliveryFee
+    val total: Double? get() = checkoutDetails?.total
+}
 
 /**
  * API response wrapper for cart
+ * Note: The cart API returns CartResponse directly, not wrapped in a "data" field
  */
-data class CartApiResponse(
-    @SerializedName("data")
-    val data: CartResponse?
-)
+typealias CartApiResponse = CartResponse
 
 /**
  * API response wrapper for menu items list
  */
 data class MenuItemsApiResponse(
-    @SerializedName("data")
+    @SerializedName("foodItems")
     val data: List<MenuItemResponse?>?
+)
+
+/**
+ * API request model for adding/updating address
+ */
+data class AddAddressRequest(
+    @SerializedName("addressLine1")
+    val addressLine1: String,
+    @SerializedName("addressLine2")
+    val addressLine2: String? = null,
+    @SerializedName("city")
+    val city: String,
+    @SerializedName("state")
+    val state: String,
+    @SerializedName("zipCode")
+    val zipCode: String,
+    @SerializedName("country")
+    val country: String,
+    @SerializedName("latitude")
+    val latitude: Double,
+    @SerializedName("longitude")
+    val longitude: Double
+)
+
+/**
+ * API response wrapper for address list
+ */
+data class AddressesApiResponse(
+    @SerializedName("data")
+    val data: List<AddressResponse>? = null
+)
+
+/**
+ * API response wrapper for single address
+ */
+data class AddressApiResponse(
+    @SerializedName("data")
+    val data: AddressResponse? = null
+)
+
+/**
+ * API request model for reverse geocoding
+ */
+data class ReverseGeocodeRequest(
+    @SerializedName("latitude")
+    val latitude: Double,
+    @SerializedName("longitude")
+    val longitude: Double
+)
+
+/**
+ * API response model for reverse geocoding
+ */
+data class ReverseGeocodeResponse(
+    @SerializedName("address")
+    val address: String? = null,
+    @SerializedName("city")
+    val city: String? = null,
+    @SerializedName("state")
+    val state: String? = null,
+    @SerializedName("zipCode")
+    val zipCode: String? = null,
+    @SerializedName("country")
+    val country: String? = null
 )

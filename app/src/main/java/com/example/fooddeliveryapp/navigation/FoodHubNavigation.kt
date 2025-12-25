@@ -8,9 +8,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.example.fooddeliveryapp.data.SessionManager
+import com.example.fooddeliveryapp.ui.features.cart.CartScreen
 import com.example.fooddeliveryapp.ui.features.orders.CheckoutScreen
 import com.example.fooddeliveryapp.ui.features.orders.OrderDetailsScreen
 import com.example.fooddeliveryapp.ui.features.orders.OrderListScreen
+import com.example.fooddeliveryapp.ui.features.restaurant.RestaurantDetailScreen
 import com.example.fooddeliveryapp.ui.screens.HomeScreen.HomeScreen
 import com.example.fooddeliveryapp.ui.screens.auth.AuthScreen
 import com.example.fooddeliveryapp.ui.screens.splash.SplashScreen
@@ -98,6 +100,44 @@ fun FoodHubNavigation(
                     navController.navigate(OrderDetailsRoute(orderId)) {
                         popUpTo(CheckoutRoute) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        // Cart Screen
+        composable<CartRoute> {
+            CartScreen(
+                onBackClick = {
+                    navController.navigateUp()
+                },
+                onCheckoutClick = {
+                    navController.navigate(CheckoutRoute)
+                }
+            )
+        }
+
+        // Restaurant Details Screen
+        composable<RestaurantDetailsRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<RestaurantDetailsRoute>()
+            // TODO: Load restaurant by ID from ViewModel
+            // For now, we need to pass the restaurant object through navigation
+            // This is a limitation - ideally we'd fetch by ID in the ViewModel
+            RestaurantDetailScreen(
+                restaurant = com.example.fooddeliveryapp.data.model.Restaurant(
+                    id = route.restaurantId,
+                    name = "Loading...",
+                    description = "",
+                    imageUrl = "",
+                    rating = 0f,
+                    deliveryTime = "",
+                    deliveryFee = 0.0,
+                    categories = emptyList()
+                ),
+                onBackClick = {
+                    navController.navigateUp()
+                },
+                onCartClick = {
+                    navController.navigate(CartRoute)
                 }
             )
         }

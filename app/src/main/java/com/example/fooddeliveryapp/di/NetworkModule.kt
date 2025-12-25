@@ -1,6 +1,7 @@
 package com.example.fooddeliveryapp.di
 
 import android.content.Context
+import com.example.fooddeliveryapp.BuildConfig
 import com.example.fooddeliveryapp.data.api.AuthApiService
 import com.example.fooddeliveryapp.data.api.RestaurantApiService
 import com.example.fooddeliveryapp.data.api.TokenInterceptor
@@ -35,7 +36,11 @@ object NetworkModule {
 
         // Package name header interceptor
         val packageNameInterceptor = Interceptor { chain ->
-            val packageName = context.packageName
+            // Use BuildConfig.APPLICATION_ID to get the correct applicationId for each build variant
+            // customer: com.codewithfk.foodhub
+            // restaurant: com.codewithfk.foodhub.restaurant
+            // rider: com.codewithfk.foodhub.rider
+            val packageName = BuildConfig.APPLICATION_ID
             val request = chain.request().newBuilder()
                 .addHeader("X-Package-Name", packageName)
                 .build()
@@ -43,9 +48,9 @@ object NetworkModule {
         }
 
         return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
             .addInterceptor(packageNameInterceptor)
             .addInterceptor(tokenInterceptor) // Token interceptor handles auth and refresh
+            .addNetworkInterceptor(loggingInterceptor) // Use network interceptor to avoid conflicts with response body
             .build()
     }
 
@@ -87,6 +92,18 @@ object NetworkModule {
     @Singleton
     fun provideMenuApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.MenuApiService {
         return retrofit.create(com.example.fooddeliveryapp.data.api.MenuApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRiderApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.RiderApiService {
+        return retrofit.create(com.example.fooddeliveryapp.data.api.RiderApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAddressApiService(retrofit: Retrofit): com.example.fooddeliveryapp.data.api.AddressApiService {
+        return retrofit.create(com.example.fooddeliveryapp.data.api.AddressApiService::class.java)
     }
 
 }
